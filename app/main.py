@@ -2,12 +2,12 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 from typing import Annotated
-from routers.users import router as users_router
-from routers.projects import router as projects_router
-from routers.tasks import router as tasks_router
-from routers.comments import router as comments_router
+from app.routers.users import router as users_router
+from app.routers.projects import router as projects_router
+from app.routers.tasks import router as tasks_router
+from app.routers.comments import router as comments_router
 
-from db import engine, Base, async_session
+from app.db import engine, Base, async_session
 
 
 

@@ -2,7 +2,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
-from config import settings
+from app.config import settings
 
 #Настройки безопасности
 SECURITY_KEY = settings.security_key

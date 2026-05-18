@@ -5,12 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Annotated
 
-from db import async_session
-from models import User, Project, Task, Comment
-from security import decode_access_token
-from models import User
+from app.db import async_session
+from app.models import User, Project, Task, Comment
+from app.security import decode_access_token
+from app.models import User
 from sqlalchemy import select
-from config import settings
+from app.config import settings
 
 
 

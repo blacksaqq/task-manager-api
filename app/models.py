@@ -3,7 +3,7 @@ from sqlalchemy import String, Integer, ForeignKey
 from typing import Optional
 
 
-from db import Base
+from app.db import Base
 
 class User(Base):
     __tablename__ = 'users'

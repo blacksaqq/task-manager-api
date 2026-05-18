@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from sqlalchemy import select
-from dependencies import dbSession, get_project_or_404, get_user_or_404, get_task_or_404
-from models import Task
+from app.dependencies import dbSession, get_project_or_404, get_user_or_404, get_task_or_404
+from app.models import Task
 from sqlalchemy.orm import selectinload
 
-from schemas import (TaskCreate,
+from app.schemas import (TaskCreate,
                      TaskRead,
                      TaskWithDetails)
 

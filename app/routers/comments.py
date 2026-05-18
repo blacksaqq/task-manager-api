@@ -2,10 +2,10 @@ from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from dependencies import dbSession, get_user_or_404, get_task_or_404, get_comment_or_404
-from models import Comment
+from app.dependencies import dbSession, get_user_or_404, get_task_or_404, get_comment_or_404
+from app.models import Comment
 
-from schemas import (CommentCreate,
+from app.schemas import (CommentCreate,
                      CommentRead,
                      CommentWithDetails)
 

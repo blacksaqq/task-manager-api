@@ -3,10 +3,10 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
-from dependencies import dbSession, get_user_or_404
-from models import User
+from app.dependencies import dbSession, get_user_or_404
+from app.models import User
 
-from schemas import (UserCreate,
+from app.schemas import (UserCreate,
                      UserRead,
                      UserWithDetails)
 

@@ -2,10 +2,10 @@ from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from dependencies import dbSession, get_project_or_404, get_user_or_404
-from models import Project
+from app.dependencies import dbSession, get_project_or_404, get_user_or_404
+from app.models import Project
 
-from schemas import (ProjectCreate,
+from app.schemas import (ProjectCreate,
                      ProjectRead,
                      ProjectWithDetails)
 
