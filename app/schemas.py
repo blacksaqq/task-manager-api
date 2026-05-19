@@ -1,10 +1,14 @@
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 class UserCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     email: EmailStr
+    password: str = Field(min_length=1, max_length=72)
     city: str = Field(min_length=1, max_length=255)
 
 class UserRead(BaseModel):
@@ -21,7 +25,6 @@ class UserRead(BaseModel):
 class ProjectCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     description: str
-    owner_id: int = Field(gt=0)
 
 class ProjectRead(BaseModel):
     id: int
@@ -39,7 +42,6 @@ class TaskCreate(BaseModel):
     description: str | None = None
     status: str = Field(min_length=1, max_length=63)
     project_id: int = Field(gt=0)
-    assignee_id: int | None = None
 
 class TaskRead(BaseModel):
     id: int
@@ -47,7 +49,6 @@ class TaskRead(BaseModel):
     description: str | None = None
     status: str
     project_id: int
-    assignee_id: int | None = None
 
     model_config = {
         'from_attributes' : True
@@ -59,7 +60,6 @@ class TaskRead(BaseModel):
 class CommentCreate(BaseModel):
     text: str = Field(min_length=1, max_length=1023)
     task_id: int = Field(gt=0)
-    user_id: int = Field(gt=0)
 
 class CommentRead(BaseModel):
     id: int

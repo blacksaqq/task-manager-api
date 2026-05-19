@@ -1,6 +1,5 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import  OAuth2PasswordBearer
-from jose import JWTError #будет удален, просто разбирался
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Annotated
@@ -58,7 +57,7 @@ async def get_comment_or_404(comment_id: int,
     else:
         return comment
     
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='auth/login')
 
 async def get_current_user(
         token: Annotated[str, Depends(oauth2_scheme)],

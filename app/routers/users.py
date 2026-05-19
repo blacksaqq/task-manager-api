@@ -3,12 +3,13 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
-from app.dependencies import dbSession, get_user_or_404
+from app.dependencies import dbSession, get_user_or_404, CurrentUser
 from app.models import User
 
 from app.schemas import (UserCreate,
                      UserRead,
                      UserWithDetails)
+from app.security import hash_password
 
 
 
@@ -23,6 +24,7 @@ async def create_user(db: dbSession,
     new_user = User(
         name = user.name,
         email = user.email,
+        password_hash = hash_password(user.password),
         city = user.city
     )
 
@@ -42,6 +44,11 @@ async def create_user(db: dbSession,
 async def get_users(db: dbSession):
     result = await db.execute(select(User))
     return result.scalars().all()
+
+
+@router.get('/me', response_model=UserRead)
+async def get_me(current_user: CurrentUser):
+    return current_user
     
 @router.get('/search', response_model=list[UserRead])
 async def users_city(user_city: str,

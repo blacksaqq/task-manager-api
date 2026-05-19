@@ -11,6 +11,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     city: Mapped[str] = mapped_column(String, nullable=False, index=True)
     tasks: Mapped[list['Task']] = relationship(back_populates='assignee')
     projects: Mapped[list['Project']] = relationship(back_populates='owner')
