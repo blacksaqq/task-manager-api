@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from app.dependencies import dbSession, get_user_or_404, get_task_or_404, get_comment_or_404
+from app.dependencies import dbSession, get_task_or_404, get_comment_or_404, CurrentUser
 from app.models import Comment
 
 from app.schemas import (CommentCreate,
@@ -13,16 +13,16 @@ from app.schemas import (CommentCreate,
 router = APIRouter(prefix='/comments', tags=['Комментарии'])
 
 
-@router.post('/', response_model=CommentRead)
+@router.post('/', response_model=CommentRead) #Создание коммента, привязка к пользователю
 async def add_comment(comment: CommentCreate,
-                      db: dbSession):
-    await get_user_or_404(comment.user_id, db)
-    await get_task_or_404(comment.task_id, db)
+                      db: dbSession,
+                      current_user: CurrentUser):
+    await get_task_or_404(comment.task_id, db, current_user)
 
     new_comment = Comment(
         text = comment.text,
         task_id = comment.task_id,
-        user_id = comment.user_id
+        user_id = current_user.id
     )
 
     db.add(new_comment)
@@ -33,40 +33,33 @@ async def add_comment(comment: CommentCreate,
     return new_comment
 
 
-@router.get('/', response_model=list[CommentRead])
-async def get_comments(db: dbSession):
-    result = await db.execute(select(Comment))
+@router.get('/', response_model=list[CommentRead]) #Получение всех комментов авторизованного пользователя
+async def get_comments(db: dbSession,
+                       current_user: CurrentUser):
+    result = await db.execute(select(Comment).where(Comment.user_id == current_user.id))
     return result.scalars().all()
 
 
-@router.get('/{task_id}/comments', response_model=list[CommentRead])
+@router.get('/{task_id}/comments', response_model=list[CommentRead])  #Получить все комменты определенного задания авторизованного пользователя
 async def get_task_comment(task_id: int,
-                           db: dbSession):
-    await get_task_or_404(task_id, db)
+                           db: dbSession,
+                           current_user: CurrentUser):
+    await get_task_or_404(task_id, db, current_user)
 
-    result = await db.execute(select(Comment).where(Comment.task_id == task_id))
+    result = await db.execute(select(Comment).where(Comment.task_id == task_id,
+                                                    Comment.user_id == current_user.id))
     return result.scalars().all()
 
 
-@router.get('/{comment_id}', response_model=CommentWithDetails)
-async def get_comment(comment_id: int, db: dbSession):
-    query = (
-        select(Comment)
-        .options(
-            selectinload(Comment.user),
-            selectinload(Comment.task)
-        )
-        .where(Comment.id == comment_id)
-    )
+@router.get('/{comment_id}', response_model=CommentWithDetails) #Получение комментария авторизованного пользователя
+async def get_comment(comment_id: int, 
+                      db: dbSession,
+                      current_user: CurrentUser):
     
-    result = await db.execute(query)
-    comment = result.scalar_one_or_none()
-
-    if comment is None:
-        raise HTTPException(status_code=404, detail='Комментарий не найден')
+    comment = await get_comment_or_404(comment_id, db, current_user)
     return comment
 
-@router.delete('/{comment_id}')
+@router.delete('/{comment_id}') #Удаление комментария авторизованного пользователя
 async def delete_comment(comment_id: int,
                          db: dbSession,
                          comment: Comment = Depends(get_comment_or_404)):
@@ -74,3 +67,17 @@ async def delete_comment(comment_id: int,
     await db.commit()
     return {'message': f'Комментарий c id: {comment_id} удален'}
 
+@router.put('/{comment_id}', response_model=CommentRead)
+async def update_comment(db: dbSession,
+                         comment_data: CommentCreate,
+                         current_user: CurrentUser,
+                         comment: Comment = Depends(get_comment_or_404)):
+    await get_task_or_404(comment_data.task_id, db, current_user)
+
+    comment.text = comment_data.text
+    comment.task_id = comment_data.task_id
+
+    await db.commit()
+    await db.refresh(comment)
+
+    return comment

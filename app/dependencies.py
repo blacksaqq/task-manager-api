@@ -3,6 +3,7 @@ from fastapi.security import  OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Annotated
+from sqlalchemy.orm import selectinload, joinedload
 
 from app.db import async_session
 from app.models import User, Project, Task, Comment
@@ -29,33 +30,7 @@ async def get_user_or_404(user_id: int, db: dbSession) -> User:
         return user
     
 
-async def get_project_or_404(project_id: int,
-                             db: dbSession):
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if project is None:
-        raise HTTPException(status_code=404, detail='Проект не найден')
-    else:
-        return project
-    
-async def get_task_or_404(task_id: int,
-                          db: dbSession):
-    result = await db.execute(select(Task).where(Task.id == task_id))
-    task = result.scalar_one_or_none()
-    if task is None:
-        raise HTTPException(status_code=404, detail='Задача не найдена')
-    else:
-        return task
-    
 
-async def get_comment_or_404(comment_id: int,
-                             db: dbSession):
-    result = await db.execute(select(Comment).where(Comment.id == comment_id))
-    comment = result.scalar_one_or_none()
-    if comment is None:
-        raise HTTPException(status_code=404, detail='Комментарий не найден')
-    else:
-        return comment
     
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='auth/login')
 
@@ -80,3 +55,45 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+async def get_project_or_404(project_id: int,
+                             db: dbSession,
+                             current_user: CurrentUser):
+    result = await db.execute(select(Project).where(Project.id == project_id,
+                                                    Project.owner_id == current_user.id)
+                                                    .options(joinedload(Project.owner),
+                                                             selectinload(Project.tasks)))
+    project = result.scalar_one_or_none()
+    if project is None:
+        raise HTTPException(status_code=404, detail='Проект не найден или у вас нет доступа к нему')
+    else:
+        return project
+    
+
+async def get_task_or_404(task_id: int,
+                          db: dbSession,
+                          current_user: CurrentUser):
+    result = await db.execute(select(Task).where(Task.id == task_id,
+                                                 Task.assignee_id == current_user.id)
+                                                 .options(joinedload(Task.assignee),
+                                                          selectinload(Task.comments)))
+    task = result.scalar_one_or_none()
+    if task is None:
+        raise HTTPException(status_code=404, detail='Задача не найдена или у вас нет доступа к ней')
+    else:
+        return task
+
+async def get_comment_or_404(comment_id: int,
+                             db: dbSession,
+                             current_user: CurrentUser):
+    result = await db.execute(select(Comment).join(Comment.task)
+                              .where(Comment.id == comment_id,
+                                     Task.assignee_id == current_user.id)
+                                     .options(joinedload(Comment.user),
+                                              joinedload(Comment.task)))
+    comment = result.scalar_one_or_none()
+    if comment is None:
+        raise HTTPException(status_code=404, detail='Комментарий не найден или у вас нет доступа к нему')
+    else:
+        return comment
+
