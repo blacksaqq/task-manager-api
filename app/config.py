@@ -6,6 +6,11 @@ class Settings(BaseSettings):
     algorithm: str = 'HS256'
     access_token_expire_minutes: int = 30
 
+    cookie_name: str = 'access_token'
+    cookie_httponly: bool = True
+    cookie_secure: bool = False
+    cookie_samesite: str = 'lax'
+
     model_config = SettingsConfigDict(
         env_file = '.env',
         env_file_encoding = 'utf-8',

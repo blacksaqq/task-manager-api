@@ -9,35 +9,12 @@ from app.models import User
 from app.schemas import (UserCreate,
                      UserRead,
                      UserWithDetails)
-from app.security import hash_password
 
 
 
 router = APIRouter(prefix='/users', tags=['Пользователи'])
 
 
-
-@router.post('/', response_model=UserRead)
-async def create_user(db: dbSession,
-                      user: UserCreate):
-    
-    new_user = User(
-        name = user.name,
-        email = user.email,
-        password_hash = hash_password(user.password),
-        city = user.city
-    )
-
-    
-    db.add(new_user)
-
-    try:
-        await db.commit()
-        await db.refresh(new_user)
-        return new_user
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=409, detail='Пользователь с таким email уже существует')
 
 
 @router.get('/', response_model=list[UserRead])
