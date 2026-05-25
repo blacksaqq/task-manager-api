@@ -20,12 +20,16 @@ router = APIRouter(prefix='/auth', tags=['Аутентификация'])
 async def register(db: dbSession,
                    user: UserCreate,
                    response: Response):
-    
+    result = await db.execute(select(User).limit(1))
+    users = result.scalars().all()
+    role = 'admin' if len(users) == 0 else 'user'
+
     new_user = User(
         name = user.name,
         email = user.email,
         password_hash = hash_password(user.password),
-        city = user.city
+        city = user.city,
+        role = role
     )
 
     
@@ -81,7 +85,12 @@ async def login(
 
 @router.post('/logout')
 async def logout(response: Response):
-    response.delete_cookie(key=settings.cookie_name)
+    response.delete_cookie(
+        key=settings.cookie_name,
+        httponly=settings.cookie_httponly,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite
+        )
     return {'detail': 'Вы успешно вышли'}
 
 

@@ -8,8 +8,6 @@ from sqlalchemy.orm import selectinload, joinedload
 from app.db import async_session
 from app.models import User, Project, Task, Comment
 from app.security import decode_access_token
-from app.models import User
-from sqlalchemy import select
 from app.config import settings
 
 
@@ -105,4 +103,12 @@ async def get_comment_or_404(comment_id: int,
         raise HTTPException(status_code=404, detail='Комментарий не найден или у вас нет доступа к нему')
     else:
         return comment
+    
+
+async def get_admin_user(current_user: CurrentUser) -> User:
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail='Доступ запрещен!')
+    return current_user
+
+AdminUser = Annotated[User, Depends(get_admin_user)]
 

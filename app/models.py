@@ -13,6 +13,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     city: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String, nullable=False)
     tasks: Mapped[list['Task']] = relationship(back_populates='assignee')
     projects: Mapped[list['Project']] = relationship(back_populates='owner')
     comments: Mapped[list['Comment']] = relationship(back_populates='user')

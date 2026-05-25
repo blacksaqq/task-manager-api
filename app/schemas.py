@@ -16,6 +16,7 @@ class UserRead(BaseModel):
     name: str
     email: EmailStr
     city: str
+    role: str
 
     model_config = {
         'from_attributes' : True
