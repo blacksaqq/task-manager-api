@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -8,7 +8,9 @@ from sqlalchemy.exc import IntegrityError
 from app.schemas import Token
 from app.models import User
 from app.dependencies import dbSession
-from app.security import verify_password, create_access_token, hash_password
+from app.security import (verify_password, create_access_token, 
+                          hash_password, create_refresh_token, 
+                          decode_access_token)
 from app.config import settings
 from app.schemas import UserCreate, UserRead
 
@@ -45,10 +47,23 @@ async def register(db: dbSession,
         raise HTTPException(status_code=409, detail='Пользователь с таким email уже существует')
     
     access_token = create_access_token(data={'sub': str(new_user.id)})
+    refresh_token = create_refresh_token(data={'sub': str(new_user.id)})
+
+    #access_token
     response.set_cookie(
-        key=settings.cookie_name,
+        key=settings.access_cookie_name,
         value=access_token,
         max_age=settings.access_token_expire_minutes*60,
+        httponly=settings.cookie_httponly,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite
+    )
+
+    #refresh_token
+    response.set_cookie(
+        key = settings.refresh_cookie_name,
+        value = refresh_token,
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
         httponly=settings.cookie_httponly,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite
@@ -68,13 +83,28 @@ async def login(
     user = result.scalar_one_or_none()
 
     if user is None or not verify_password(form.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Incorrect email or password', headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
+                            detail='Incorrect email or password', 
+                            headers={"WWW-Authenticate": "Bearer"})
+    
     access_token = create_access_token(data={'sub': str(user.id)})
+    refresh_token = create_refresh_token(data={'sub': str(user.id)})
 
+    #access_token
     response.set_cookie(
-        key=settings.cookie_name,
+        key=settings.access_cookie_name,
         value=access_token,
         max_age=settings.access_token_expire_minutes*60,
+        httponly=settings.cookie_httponly,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite
+    )
+
+    #refresh_token
+    response.set_cookie(
+        key = settings.refresh_cookie_name,
+        value = refresh_token,
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
         httponly=settings.cookie_httponly,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite
@@ -83,16 +113,54 @@ async def login(
     return Token(access_token=access_token, token_type='bearer')
 
 
+
+@router.post('/refresh')
+async def refresh(request: Request, db: dbSession, response: Response):
+    refresh_token = request.cookies.get(settings.refresh_cookie_name)
+    if refresh_token is None:
+        raise HTTPException(status_code=401, detail='Refresh токен не найден')
+    
+    playload = decode_access_token(refresh_token)
+    if playload is None or playload.get('type') != 'refresh':
+        raise HTTPException(status_code=401, detail='Refresh токен не действителен')
+    
+    user_id = playload.get('sub')
+    if user_id is None:
+        raise HTTPException(status_code=401, detail='ID пользователя отстутствует')
+    
+    result = await db.execute(select(User).where(User.id == int(user_id)))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=401, detail='Пользователь не найден')
+    
+    new_access_token = create_access_token(data={'sub': str(user_id)})
+    response.set_cookie(
+        key = settings.access_cookie_name,
+        value = new_access_token,
+        max_age=settings.access_token_expire_minutes*60,
+        httponly=settings.cookie_httponly,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite
+    )
+    
+    return Token(access_token=new_access_token, token_type='bearer')
+
+
 @router.post('/logout')
 async def logout(response: Response):
     response.delete_cookie(
-        key=settings.cookie_name,
+        key=settings.access_cookie_name,
+        httponly=settings.cookie_httponly,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite
+        )
+    response.delete_cookie(
+        key=settings.refresh_cookie_name,
         httponly=settings.cookie_httponly,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite
         )
     return {'detail': 'Вы успешно вышли'}
-
 
 
     

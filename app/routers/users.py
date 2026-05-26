@@ -74,7 +74,6 @@ async def update_user(user_id: int,
     user.name = user_data.name
     user.email = user_data.email
     user.city = user_data.city
-    user.role = user_data.role
     try:
         await db.commit()
         await db.refresh(user)
@@ -83,3 +82,17 @@ async def update_user(user_id: int,
         await db.rollback()
         raise HTTPException(status_code=409, detail='Пользователь с таким email уже существует')
     
+
+@router.put('/role/{user_id}')
+async def update_role(user_id: int,
+                      role: str,
+                      db: dbSession,
+                      admin: AdminUser,
+                      user: User = Depends(get_user_or_404)):
+    if role not in ['admin', 'user']:
+        raise HTTPException(status_code=404, detail='Такой роли не существует')
+    user.role = role
+
+    await db.commit()
+    await db.refresh(user)
+    return {'message':f'Пользователь с id {user_id} теперь имеет роль {role}'}

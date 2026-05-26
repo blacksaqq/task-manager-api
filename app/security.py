@@ -8,6 +8,7 @@ from app.config import settings
 SECURITY_KEY = settings.security_key
 ALGORITHM = settings.algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+REFRESH_TOKEN_EXPIRE_DAYS = settings.refresh_token_expire_days
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
@@ -25,7 +26,7 @@ def create_access_token(data: dict):
     to_encode = data.copy()
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({'exp': expire})
+    to_encode.update({'exp': expire, 'type': 'access'})
 
     encoded_jwt = jwt.encode(to_encode, SECURITY_KEY, algorithm=ALGORITHM)
     return encoded_jwt 
@@ -37,3 +38,13 @@ def decode_access_token(token: str):
         return payload
     except InvalidTokenError:
         return None
+    
+#Создаем рефреш токен
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+    
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({'exp': expire, 'type': 'refresh'})
+
+    encoded_jwt = jwt.encode(to_encode, SECURITY_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
