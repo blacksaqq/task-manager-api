@@ -43,13 +43,14 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail='Токен не найден')
 
     payload = decode_access_token(token)
-    if payload.get('type') != 'access':
-        raise HTTPException(status_code=401, detail='access токен не действителен')
-
     if payload is None:
         raise HTTPException(status_code=401, 
                             detail='Не удалось валидизировать учетные данные', 
                             headers={'WWW-Authenticate': 'Bearer'})
+    
+    if payload.get('type') != 'access':
+        raise HTTPException(status_code=401, detail='access токен не действителен')
+
     user_id: int = payload.get('sub')
     if user_id is None:
         raise HTTPException(status_code=401, 

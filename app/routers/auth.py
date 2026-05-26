@@ -120,11 +120,11 @@ async def refresh(request: Request, db: dbSession, response: Response):
     if refresh_token is None:
         raise HTTPException(status_code=401, detail='Refresh токен не найден')
     
-    playload = decode_access_token(refresh_token)
-    if playload is None or playload.get('type') != 'refresh':
+    payload = decode_access_token(refresh_token)
+    if payload is None or payload.get('type') != 'refresh':
         raise HTTPException(status_code=401, detail='Refresh токен не действителен')
     
-    user_id = playload.get('sub')
+    user_id = payload.get('sub')
     if user_id is None:
         raise HTTPException(status_code=401, detail='ID пользователя отстутствует')
     
