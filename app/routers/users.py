@@ -12,7 +12,7 @@ from app.schemas import (UserCreate,
 
 
 
-router = APIRouter(prefix='/users', tags=['Пользователи'])
+router = APIRouter(prefix='/users', tags=['Users'])
 
 
 
@@ -34,7 +34,8 @@ async def users_city(user_city: str,
     result = await db.execute(select(User).where(User.city.ilike(f'%{user_city}%')))
     users = result.scalars().all()
     if not users:
-        raise HTTPException(status_code=404, detail=f'Пользователей из города "{user_city}" не было найдено')
+        raise HTTPException(status_code=404, 
+                            detail=f'No users found for city: "{user_city}"')
     else:
         return users
 
@@ -51,7 +52,7 @@ async def get_user(user_id: int,
     user = result.scalar_one_or_none()
 
     if user is None:
-        raise HTTPException(status_code=404, detail='Пользователь не найден')
+        raise HTTPException(status_code=404, detail='User not found')
     else:
         return user
 
@@ -62,7 +63,7 @@ async def delete_user(user_id: int,
                       user: User = Depends(get_user_or_404)):
     await db.delete(user)
     await db.commit()
-    return {'message': f'Пользователь с id: {user_id} удален'}
+    return {'message': f'User with ID {user_id} has been successfully removed'}
 
 
 @router.put('/{user_id}', response_model=UserRead)
@@ -80,7 +81,7 @@ async def update_user(user_id: int,
         return user
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=409, detail='Пользователь с таким email уже существует')
+        raise HTTPException(status_code=409, detail='A user with this email address already exists in the system')
     
 
 @router.put('/role/{user_id}')
@@ -90,9 +91,9 @@ async def update_role(user_id: int,
                       admin: AdminUser,
                       user: User = Depends(get_user_or_404)):
     if role not in ['admin', 'user']:
-        raise HTTPException(status_code=404, detail='Такой роли не существует')
+        raise HTTPException(status_code=404, detail='The requested role does not exist')
     user.role = role
 
     await db.commit()
     await db.refresh(user)
-    return {'message':f'Пользователь с id {user_id} теперь имеет роль {role}'}
+    return {'message':f'User with id {user_id} now has the role {role}'}

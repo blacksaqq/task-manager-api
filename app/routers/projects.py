@@ -9,7 +9,7 @@ from app.schemas import (ProjectCreate,
                      ProjectWithDetails)
 
 
-router = APIRouter(prefix='/projects', tags=['Проекты'])
+router = APIRouter(prefix='/projects', tags=['Projects'])
 
 
 
@@ -51,7 +51,7 @@ async def delete_project(project_id: int,
 
     await db.delete(project)
     await db.commit()
-    return {'message': f'Проект с id: {project_id} удален успешно'}
+    return {'message': f'Project with id: {project_id} has been successfully deleted'}
 
 @router.put('/{project_id}', response_model = ProjectRead) #Изменение проекта авторизованного пользователя
 async def update_project(db: dbSession,

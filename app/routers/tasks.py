@@ -10,7 +10,7 @@ from app.schemas import (TaskCreate,
                      TaskWithDetails)
 
 
-router = APIRouter(prefix='/tasks', tags=['Задачи'])
+router = APIRouter(prefix='/tasks', tags=['Tasks'])
 
 
     
@@ -55,7 +55,7 @@ async def delete_task(db: dbSession,
     await db.delete(task)
     await db.commit()
 
-    return {'message': f'Задача с id: {task_id} удалена успешно'}
+    return {'message': f'Task with id: {task_id} has been successfully deleted'}
     
 
 @router.put('/{task_id}', response_model=TaskRead) #Изменить задачу, только свою

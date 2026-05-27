@@ -15,7 +15,7 @@ from app.config import settings
 from app.schemas import UserCreate, UserRead
 
 
-router = APIRouter(prefix='/auth', tags=['Аутентификация'])
+router = APIRouter(prefix='/auth', tags=['Auth'])
 
 
 @router.post('/register', response_model=UserRead)
@@ -44,7 +44,7 @@ async def register(db: dbSession,
         await db.refresh(new_user)
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=409, detail='Пользователь с таким email уже существует')
+        raise HTTPException(status_code=409, detail='A user with this email already exists')
     
     access_token = create_access_token(data={'sub': str(new_user.id)})
     refresh_token = create_refresh_token(data={'sub': str(new_user.id)})
@@ -118,20 +118,20 @@ async def login(
 async def refresh(request: Request, db: dbSession, response: Response):
     refresh_token = request.cookies.get(settings.refresh_cookie_name)
     if refresh_token is None:
-        raise HTTPException(status_code=401, detail='Refresh токен не найден')
+        raise HTTPException(status_code=401, detail='Refresh token not found')
     
     payload = decode_access_token(refresh_token)
     if payload is None or payload.get('type') != 'refresh':
-        raise HTTPException(status_code=401, detail='Refresh токен не действителен')
+        raise HTTPException(status_code=401, detail='Refresh token is invalid')
     
     user_id = payload.get('sub')
     if user_id is None:
-        raise HTTPException(status_code=401, detail='ID пользователя отстутствует')
+        raise HTTPException(status_code=401, detail='User ID is missing')
     
     result = await db.execute(select(User).where(User.id == int(user_id)))
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=401, detail='Пользователь не найден')
+        raise HTTPException(status_code=401, detail='User not found')
     
     new_access_token = create_access_token(data={'sub': str(user_id)})
     response.set_cookie(
@@ -160,7 +160,7 @@ async def logout(response: Response):
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite
         )
-    return {'detail': 'Вы успешно вышли'}
+    return {'detail': 'You have successfully logged out'}
 
 
     

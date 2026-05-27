@@ -10,7 +10,7 @@ from app.schemas import (CommentCreate,
                      CommentWithDetails)
 
 
-router = APIRouter(prefix='/comments', tags=['Комментарии'])
+router = APIRouter(prefix='/comments', tags=['Comments'])
 
 
 @router.post('/', response_model=CommentRead) #Создание коммента, привязка к пользователю
@@ -65,7 +65,7 @@ async def delete_comment(comment_id: int,
                          comment: Comment = Depends(get_comment_or_404)):
     await db.delete(comment)
     await db.commit()
-    return {'message': f'Комментарий c id: {comment_id} удален'}
+    return {'message': f'Comment with id: {comment_id} has been successfully deleted'}
 
 @router.put('/{comment_id}', response_model=CommentRead)
 async def update_comment(db: dbSession,

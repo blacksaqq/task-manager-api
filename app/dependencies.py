@@ -23,7 +23,7 @@ async def get_user_or_404(user_id: int, db: dbSession) -> User:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=404, detail='Пользователь не найден')
+        raise HTTPException(status_code=404, detail='User not found')
     else:
         return user
     
@@ -37,30 +37,30 @@ async def get_current_user(
         header_token: Annotated[Optional[str], Depends(oauth2_scheme)],
         db: dbSession
         ) -> User:
-    token = header_token or request.cookies.get(settings.cookie_name)
+    token = header_token or request.cookies.get(settings.access_cookie_name)
 
     if token is None:
-        raise HTTPException(status_code=401, detail='Токен не найден')
+        raise HTTPException(status_code=401, detail='Token not found')
 
     payload = decode_access_token(token)
     if payload is None:
         raise HTTPException(status_code=401, 
-                            detail='Не удалось валидизировать учетные данные', 
+                            detail='Failed to validate the credentials', 
                             headers={'WWW-Authenticate': 'Bearer'})
     
     if payload.get('type') != 'access':
-        raise HTTPException(status_code=401, detail='access токен не действителен')
+        raise HTTPException(status_code=401, detail='Access token validation failed')
 
     user_id: int = payload.get('sub')
     if user_id is None:
         raise HTTPException(status_code=401, 
-                            detail='ID пользователя отсутствует в токене')
+                            detail='The user ID is missing from the token')
     
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
     if user is None:
-        raise HTTPException(status_code=401, detail='Пользователь не найден')
+        raise HTTPException(status_code=401, detail='User not found')
     return user
 
 
@@ -75,7 +75,8 @@ async def get_project_or_404(project_id: int,
                                                              selectinload(Project.tasks)))
     project = result.scalar_one_or_none()
     if project is None:
-        raise HTTPException(status_code=404, detail='Проект не найден или у вас нет доступа к нему')
+        raise HTTPException(status_code=404, 
+                            detail='Project not found or access denied')
     else:
         return project
     
@@ -89,7 +90,8 @@ async def get_task_or_404(task_id: int,
                                                           selectinload(Task.comments)))
     task = result.scalar_one_or_none()
     if task is None:
-        raise HTTPException(status_code=404, detail='Задача не найдена или у вас нет доступа к ней')
+        raise HTTPException(status_code=404, 
+                            detail='Task not found or access denied')
     else:
         return task
 
@@ -103,14 +105,15 @@ async def get_comment_or_404(comment_id: int,
                                               joinedload(Comment.task)))
     comment = result.scalar_one_or_none()
     if comment is None:
-        raise HTTPException(status_code=404, detail='Комментарий не найден или у вас нет доступа к нему')
+        raise HTTPException(status_code=404, 
+                            detail='Comment not found or access denied')
     else:
         return comment
     
 
 async def get_admin_user(current_user: CurrentUser) -> User:
     if current_user.role != 'admin':
-        raise HTTPException(status_code=403, detail='Доступ запрещен!')
+        raise HTTPException(status_code=403, detail='Access denied')
     return current_user
 
 AdminUser = Annotated[User, Depends(get_admin_user)]
